@@ -17,7 +17,7 @@ type DataNode struct {
 // instead of persisting it anywhere
 func NewVolatileDataNode() DataNode {
 	return DataNode{
-		store: &inMemoryStore{},
+		store: NewInMemoryStore(),
 	}
 }
 
