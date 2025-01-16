@@ -14,14 +14,10 @@ func RunNameNodeProtocol() {
 	nameNode := NewNameNode()
 
 	http.HandleFunc("/create", createFileHandler(&nameNode))
-	http.HandleFunc("/new_block", allocateBlockHandler(&nameNode))
-	http.HandleFunc("read", readFileHandler(&nameNode))
+	http.HandleFunc("/new_block", newBlockHandler(&nameNode))
+	http.HandleFunc("/read", readFileHandler(&nameNode))
 	log.Printf("NameNode listening on port %d", common.NAMENODE_PORT)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", common.NAMENODE_PORT), nil))
-}
-
-type NameNodeReq struct {
-	Filepath string `json:"filepath"`
 }
 
 func createFileHandler(nameNode *NameNode) http.HandlerFunc {
@@ -38,10 +34,10 @@ func createFileHandler(nameNode *NameNode) http.HandlerFunc {
 			return
 		}
 
-		var req NameNodeReq
+		var req common.NameNodeReq
 		err = json.Unmarshal(body, &req)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
@@ -55,12 +51,7 @@ func createFileHandler(nameNode *NameNode) http.HandlerFunc {
 	}
 }
 
-type RequestBlockResp struct {
-	NewBlockID uint64   `json:"new_block_id"`
-	DataNodes  []string `json:"datanodes"`
-}
-
-func allocateBlockHandler(nameNode *NameNode) http.HandlerFunc {
+func newBlockHandler(nameNode *NameNode) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -74,7 +65,7 @@ func allocateBlockHandler(nameNode *NameNode) http.HandlerFunc {
 			return
 		}
 
-		var req NameNodeReq
+		var req common.NameNodeReq
 		err = json.Unmarshal(body, &req)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -88,7 +79,7 @@ func allocateBlockHandler(nameNode *NameNode) http.HandlerFunc {
 		}
 		dataNodes := nameNode.allocNDataNodes(1, newBlockID)
 
-		resp := RequestBlockResp{NewBlockID: uint64(newBlockID), DataNodes: dataNodes}
+		resp := common.RequestBlockResp{NewBlockID: uint64(newBlockID), DataNodes: dataNodes}
 		marshalled, err := json.Marshal(resp)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -98,15 +89,6 @@ func allocateBlockHandler(nameNode *NameNode) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		w.Write(marshalled)
 	}
-}
-
-type ReadFileResp struct {
-	Blocks []BlockMapping `json:"blocks"`
-}
-
-type BlockMapping struct {
-	BlockID       common.BlockID `json:"block_id"`
-	DataNodeAddrs []string       `json:"datanodes"`
 }
 
 func readFileHandler(nameNode *NameNode) http.HandlerFunc {
@@ -123,7 +105,7 @@ func readFileHandler(nameNode *NameNode) http.HandlerFunc {
 			return
 		}
 
-		var req NameNodeReq
+		var req common.NameNodeReq
 		err = json.Unmarshal(body, &req)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -131,15 +113,15 @@ func readFileHandler(nameNode *NameNode) http.HandlerFunc {
 		}
 
 		blockIDs, err := nameNode.getFileBlockIDs(req.Filepath)
-		mappings := make([]BlockMapping, len(blockIDs))
+		mappings := make([]common.BlockMapping, len(blockIDs))
 		for i, id := range blockIDs {
-			mappings[i] = BlockMapping{
+			mappings[i] = common.BlockMapping{
 				BlockID:       id,
 				DataNodeAddrs: nameNode.blockIDMap[id],
 			}
 		}
 
-		resp, err := json.Marshal(ReadFileResp{Blocks: mappings})
+		resp, err := json.Marshal(common.ReadFileResp{Blocks: mappings})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
