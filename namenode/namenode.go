@@ -3,6 +3,7 @@ package namenode
 
 import (
 	"errors"
+	"log"
 	"strings"
 
 	"github.com/ethangraham2001/minihdfs/common"
@@ -112,6 +113,7 @@ func (nameNode *NameNode) allocNDataNodes(n int, blockID common.BlockID) []strin
 	dataNodes := make([]string, n)
 	for i := range n {
 		dataNodeAddr := nameNode.getNextDataNodeAddr()
+		log.Printf("next datanode: %s", dataNodeAddr)
 		dataNodes[i] = dataNodeAddr
 	}
 	nameNode.blockIDMap[blockID] = dataNodes

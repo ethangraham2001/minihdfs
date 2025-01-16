@@ -6,12 +6,19 @@ import "fmt"
 
 type BlockID uint64
 
-const BLOCK_SIZE uint64 = 64 * MB
-const MB uint64 = 1048576
+const BLOCK_SIZE uint32 = KB
+const MB uint32 = 1048576
+const KB uint32 = 1024
 
 const NAMENODE_PORT int = 50000
 
+const REPLICATION_FACTOR = 2
+
 var NAMENODE_ADDR string = fmt.Sprintf("http://localhost:%d", NAMENODE_PORT)
+
+type RegisterReq struct {
+	Port int `json:"port"`
+}
 
 type NameNodeReq struct {
 	Filepath string `json:"filepath"`

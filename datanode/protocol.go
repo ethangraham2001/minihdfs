@@ -13,7 +13,8 @@ import (
 // RunDataNodeProtocol listens for connections at the provided port number
 // and interacts with a DataNode
 func RunDataNodeProtocol(port int) {
-	dataNode := NewVolatileDataNode()
+	dataNode := NewVolatileDataNode(port)
+	dataNode.registerWithNameNode()
 	handlerFunc := newRequestHandler(dataNode)
 	log.Printf("DataNode listening at port %d", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), handlerFunc))
@@ -43,6 +44,7 @@ func newRequestHandler(dataNode DataNode) http.HandlerFunc {
 			w.Write(block)
 		} else if r.Method == http.MethodPost {
 			block, err := io.ReadAll(r.Body)
+			log.Printf("got block of size %d B", len(block))
 			defer r.Body.Close()
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)

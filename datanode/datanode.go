@@ -2,7 +2,10 @@
 package datanode
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/ethangraham2001/minihdfs/common"
 )
@@ -11,13 +14,16 @@ import (
 type DataNode struct {
 	store     store
 	blockSize uint32
+	port      int
 }
 
 // NewVolatileDataNode returns a new DataNode that stores its data in memory
 // instead of persisting it anywhere
-func NewVolatileDataNode() DataNode {
+func NewVolatileDataNode(port int) DataNode {
 	return DataNode{
-		store: NewInMemoryStore(),
+		store:     NewInMemoryStore(),
+		blockSize: uint32(common.BLOCK_SIZE),
+		port:      port,
 	}
 }
 
@@ -31,4 +37,19 @@ func (dataNode DataNode) WriteBlock(blockID common.BlockID, data []byte) error {
 
 func (dataNode DataNode) ReadBlock(blockID common.BlockID) ([]byte, error) {
 	return dataNode.store.Read(blockID)
+}
+
+func (dataNode DataNode) registerWithNameNode() {
+	request := common.RegisterReq{Port: dataNode.port}
+	buff, _ := json.Marshal(request)
+	req, err := http.NewRequest("POST", common.NAMENODE_ADDR+"/register", bytes.NewBuffer(buff))
+	if err != nil {
+		panic("failed to create register request")
+	}
+
+	client := &http.Client{}
+	_, err = client.Do(req)
+	if err != nil {
+		panic("failed to register with NameNode")
+	}
 }
