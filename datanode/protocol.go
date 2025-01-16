@@ -15,7 +15,7 @@ import (
 func RunDataNodeProtocol(port int) {
 	dataNode := NewVolatileDataNode()
 	handlerFunc := newRequestHandler(dataNode)
-	log.Printf("listening at port %d", port)
+	log.Printf("DataNode listening at port %d", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), handlerFunc))
 }
 
